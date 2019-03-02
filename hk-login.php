@@ -71,25 +71,32 @@ function signup_submit(){
     /******** TEST *******/
     // echo "check signup form";
     // echo $_POST['first_name'];
-
-    global $db_login_dbname, $db_login_user, $db_login_pwd;
-    
-    $db = new PDO($db_login_dbname, $db_login_user, $db_login_pwd);
     
     if(isset($_GET['signup']) && $_GET['signup'] == 'true'){ 
     // if($_GET['signup'] == 'true'){                               /*TEST*/
     // if(isset($_POST['first_name'])){                             /*TEST*/
         
+        /******** Assigning POST into variables *******/
         $username = $_POST['username'];
         $first_name = $_POST['first_name'];
         $last_name = $_POST['last_name'];
         $email = $_POST['email'];
     //     $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
-        $query = $db->prepare("INSERT INTO users (username, first_name, last_name, email) VALUES (?,?,?,?)");
+    
+        /******** Create new user for users db *******/
+        global $db_login_dbname, $db_login_user, $db_login_pwd;
+        $db_users = new PDO($db_login_dbname, $db_login_user, $db_login_pwd);
+    
+        $query = $db_users->prepare("INSERT INTO users (username, first_name, last_name, email) VALUES (?,?,?,?)");
         $query->execute([$username, $first_name, $last_name, $email]);
         
+        /******** Create new guest for guest_profile db *******/
+        global $db_guest_details_dbname, $db_guest_details_user, $db_guest_details_pwd;
+        $db_guest_details = new PDO($db_guest_details_dbname, $db_guest_details_user, $db_guest_details_pwd);
+        
+        
     //     if($query){
-    //         $_SESSION['user_name'] = $name;
+    //         $_SESSION['guest_username'] = $username;
     //         echo json_encode(['error'=> 'success', 'msg' => 'success.php']);
     //     }// end if
     
@@ -100,7 +107,6 @@ function signup_submit(){
     // echo $_POST['password'];                                     /*TEST*/
     // echo $_POST['password_confirm'];                             /*TEST*/
     // echo json_encode(array('msg' => 'https://1touradventure.com'));            /*TEST*/
-    
        
     }// end if
     
@@ -111,7 +117,6 @@ function signup_submit(){
 
 
 /****************db functions ********************/
-
 
 $con = $con_global;
 
@@ -380,7 +385,7 @@ function register_user($first_name, $last_name, $username, $email, $password) {
 		$validation_code = md5($username . microtime());
         
         
-        // register new user in users
+        // register new user in users db
 		$sql_users = "INSERT INTO users(first_name, last_name, username, email, password, validation_code, active)";
 		$sql_users.= " VALUES('$first_name','$last_name','$username','$email','$password','$validation_code', 0)";
 		$result_users = query($sql_users);
@@ -450,7 +455,7 @@ function activate_user() {
 
 
 /****************Validate user login functions ********************/
-
+// Use in login.php
 function validate_user_login(){
 
 	$errors = [];
@@ -501,7 +506,6 @@ function validate_user_login(){
 							
 				} else {
 
-
 				echo validation_errors("Your credentials are not correct");		
 
 				}
@@ -514,7 +518,7 @@ function validate_user_login(){
 
 
 /****************User login functions ********************/
-
+// Helper function used by validate_user_login function
 function login_user($email, $password, $remember) {
 
 		$sql = "SELECT password, id, username FROM users WHERE email = '".escape($email)."' AND active = 1";
@@ -558,8 +562,8 @@ function login_user($email, $password, $remember) {
 	} // function
 	
 	
-/****************logged in function ********************/
-
+/**************** Logged In function use in all guest account page ********************/
+// Function have not been used
 function logged_in(){
 
 	if(isset($_SESSION['email']) || isset($_COOKIE['email'])){
@@ -576,7 +580,7 @@ function logged_in(){
 
 
 
-/****************Recover Password function ********************/
+/**************** Recover Password function ********************/
 
 function recover_password() {
 
@@ -732,12 +736,12 @@ function password_reset() {
 		redirect("https://1touradventure.com/recover/");
 
 		}
-}
+} // function
 
 
 
-/****************hooks functions ********************/
-
+/**************** Log In & Log Out functions use by hook ********************/
+// Helper function used by add_login_logout_link function
 function logged_inn(){
 
 	if(isset($_SESSION['email']) || isset($_COOKIE['email'])){
@@ -749,13 +753,12 @@ function logged_inn(){
 		return false;
 	}
 
-}	// functions
+} // function
 
-
+// Function have not been used
 function logged_out(){
 
 	session_destroy();
-
 
 	if(isset($_COOKIE['email'])) {
 
@@ -763,18 +766,15 @@ function logged_out(){
 
 	}
 
-}
+} // function
 
 
-
-
+/**************** Guest Account Log In & Log Out Menu ********************/
 add_filter('wp_nav_menu_loginout_items', 'add_login_logout_link', 10, 2);
- 
-
 
 function add_login_logout_link($items, $args) { 
  
-if ( logged_inn() && $args->theme_location == 'login' ) {	
+    if ( logged_inn() && $args->theme_location == 'login' ) {	
 
 	//	$loginoutlink .= '<a href="https://1touradventure.com/logout/">Log out</a>';
 		
@@ -793,15 +793,11 @@ if ( logged_inn() && $args->theme_location == 'login' ) {
             <li><a href="https://1touradventure.com/logout/">Log Out</a></li>
           </ul> </li>';
 		
-		
-		
- }else{
+    }else{
 	 
 	 if($args->theme_location == 'login'){
 	     
 	 $loginoutlink .= '<a href="https://1touradventure.com/login/">Log in | Sign up</a>';
-	 
-
 	 
 	// $loginoutlink =   $_SESSION['admin-username'];
 		
@@ -813,10 +809,10 @@ if ( logged_inn() && $args->theme_location == 'login' ) {
  }	
 		return $items;
 
-}	// functions
+} // function
 
 
-
+// Use in guest-profile.php, guest-wishlist.php, guest-my-booking.php, guest-booking-history.php, guest-dashboard.php
 function check_logged_inn(){
 
 	if(logged_inn()){
@@ -828,7 +824,7 @@ function check_logged_inn(){
 		redirect("https://1touradventure.com/login/");	
 	}
 
-}	// functions
+} // function
 
 
 
