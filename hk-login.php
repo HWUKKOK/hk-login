@@ -81,26 +81,31 @@ function signup_submit(){
         $first_name = $_POST['first_name'];
         $last_name = $_POST['last_name'];
         $email = $_POST['email'];
-    //     $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+        $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
     
         /******** Create new user for users db *******/
         global $db_login_dbname, $db_login_user, $db_login_pwd;
         $db_users = new PDO($db_login_dbname, $db_login_user, $db_login_pwd);
     
-        $query = $db_users->prepare("INSERT INTO users (username, first_name, last_name, email) VALUES (?,?,?,?)");
-        $query->execute([$username, $first_name, $last_name, $email]);
+        $query = $db_users->prepare("INSERT INTO users (username, first_name, last_name, email, password) VALUES (?,?,?,?,?)");
+        $query->execute([$username, $first_name, $last_name, $email, $password]);
         
         /******** Create new guest for guest_profile db *******/
         global $db_guest_details_dbname, $db_guest_details_user, $db_guest_details_pwd;
         $db_guest_details = new PDO($db_guest_details_dbname, $db_guest_details_user, $db_guest_details_pwd);
         
+        $query_guest_details = $db_guest_details->prepare("INSERT INTO guest_profile (username, first_name, last_name, email) VALUES (?,?,?,?)");
+        $query_guest_details->execute([$username, $first_name, $last_name, $email]);
         
-    //     if($query){
+        
+        if($query && $query_guest_details){
     //         $_SESSION['guest_username'] = $username;
+            $_SESSION['annoucement'] = 'User successfully registered';
     //         echo json_encode(['error'=> 'success', 'msg' => 'success.php']);
-    //     }// end if
+            echo json_encode(['error'=> 'success', 'msg' => 'login']);
+        }// end if
     
-    echo $_POST['first_name'];                                   /*TEST*/
+    // echo $_POST['first_name'];                                   /*TEST*/
     // echo $_POST['last_name'];                                    /*TEST*/
     // echo $_POST['username'];                                     /*TEST*/
     // echo $_POST['email'];                                        /*TEST*/
@@ -279,7 +284,7 @@ return mail($email, $subject, $msg, $headers);
 
 
 
-/****************Validation functions ********************/
+/**************** Validation functions ********************/
 
 function validate_user_registration(){
 
@@ -454,8 +459,8 @@ function activate_user() {
  
 
 
-/****************Validate user login functions ********************/
-// Use in login.php
+/**************** Validate user login functions ********************/
+// Use in old version login.php
 function validate_user_login(){
 
 	$errors = [];
@@ -515,13 +520,64 @@ function validate_user_login(){
 } // function 
 
 
+// Use in new version login.php
+function new_validate_user_login(){
+
+	$errors = [];
+	$min = 3;
+	$max = 20;
+
+	if($_SERVER['REQUEST_METHOD'] == "POST") {
+
+		$email 		    = clean($_POST['email']);
+		$password	    = clean($_POST['password']);
+		$remember   	= isset($_POST['remember']);
+
+		if(empty($email)) {
+
+			$errors[] = "Email field cannot be empty";
+
+		}
+		
+		if(empty($password)) {
+
+			$errors[] = "Password field cannot be empty";
+
+		}
+
+		if(!empty($errors)) {
+
+				foreach ($errors as $error) {
+
+				echo validation_errors($error);
+				
+				}
+
+			} else {
+
+				if(login_user($email, $password, $remember)) {
+					
+						//redirect("https://1touradventure.com/guest-dashboard/");
+						redirect("https://1touradventure.com/guest-profile/");
+							
+				} else {
+
+				echo validation_errors("Your credentials are not correct");		
+
+				}
+			}
+	}
+
+} // function
 
 
 /****************User login functions ********************/
 // Helper function used by validate_user_login function
 function login_user($email, $password, $remember) {
-
-		$sql = "SELECT password, id, username FROM users WHERE email = '".escape($email)."' AND active = 1";
+//      old version 
+// 		$sql = "SELECT password, id, username FROM users WHERE email = '".escape($email)."' AND active = 1";
+		
+		$sql = "SELECT password, id, username FROM users WHERE email = '".escape($email)."' ";
 
 		$result = query($sql);
 
@@ -532,14 +588,19 @@ function login_user($email, $password, $remember) {
 			$db_password = $row['password'];
 			
 			$guest_username = $row['username'];
+			
+            // old version password hash
+// 			if(md5($password) === $db_password) {
 
-			if(md5($password) === $db_password) {
 
-				if($remember == "on") {
+            // new version password hash
+            if(password_verify($password, $db_password)) {
+                
+				// if($remember == "on") {
 
-					setcookie('email', $email, time() + 86400);
+				// 	setcookie('email', $email, time() + 86400);
 
-				} 
+				// } 
 
 				$_SESSION['email'] = $email;
 				
