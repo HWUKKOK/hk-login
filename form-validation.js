@@ -191,7 +191,7 @@ $(document).ready(function(){
             password_confirm = "";
         
         }else{
-            $(".confirm-error").html('<div class="text-success"><i class="fa fa-check-circle"></i> Success!</div>');
+            $(".confirm-error").html('<div class="text-success"><i class="fa fa-check-circle"></i> Password Matched!</div>');
             $("#confirm_password").addClass("border-green");
             $("#confirm_password").removeClass("border-red");
             password_confirm = temp_confirm;
@@ -246,9 +246,9 @@ $(document).ready(function(){
             password_confirm = "";    
         }
 
-        // if(first_name.length != "" && last_name.length != "" && username.length != "" && email.length != "" && password.length != "" && password_confirm != ""){
+        if(first_name.length != "" && last_name.length != "" && username.length != "" && email.length != "" && password.length != "" && password_confirm != ""){
 
-        if(first_name.length !== ""){                                   /*TEST*/
+        // if(first_name.length !== ""){                                   /*TEST*/
             $.ajax({
                 type: "POST",
                 url: admin_ajax.ajaxurl,
@@ -267,13 +267,13 @@ $(document).ready(function(){
                     $('.show-progress').html("Progress!");
                 },
                 success: function(result){
-                console.log(result);
-                // var feedback = JSON.parse(result);
+                // console.log(result);
+                var feedback = JSON.parse(result);
                 
         //                 setTimeout(function(){
-        //                     if(feedback['error'] == 'success'){
-                                // location = feedback.msg;
-        //                     }
+                            if(feedback['error'] == 'success'){
+                                location = 'https://1touradventure.com/'+ feedback.msg;
+                            }
         //                 }, 3000)
                     
                 }//success
