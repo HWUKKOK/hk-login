@@ -135,9 +135,9 @@ $(document).ready(function(){
                             email = "";
                         }// end else if
                     }, 1000);//end setTimeout
-                   
                 }// success
             });// end ajax
+            
         }else{
             $(".email-error").html("Invalid Email Format!");
             $("#register_email").addClass("border-red");
@@ -201,22 +201,22 @@ $(document).ready(function(){
     
     
     
-    // === Submit the Form ===
+    // === Submit the User Registration Form ===
     $("#submit").click(function(){
 
-        if(first_name.length == ""){
-            $(".first-name-error").html("First name is required!");
-            $("#first_name").addClass("border-red");
-            $("#first_name").removeClass("border-green");
-            first_name = "";    
-        }
+        // if(first_name.length == ""){
+        //     $(".first-name-error").html("First name is required!");
+        //     $("#first_name").addClass("border-red");
+        //     $("#first_name").removeClass("border-green");
+        //     first_name = "";    
+        // }
         
-        if(last_name.length == ""){
-            $(".last-name-error").html("Last name is required!");
-            $("#last_name").addClass("border-red");
-            $("#last_name").removeClass("border-green");
-            last_name = "";    
-        }
+        // if(last_name.length == ""){
+        //     $(".last-name-error").html("Last name is required!");
+        //     $("#last_name").addClass("border-red");
+        //     $("#last_name").removeClass("border-green");
+        //     last_name = "";    
+        // }
         
         if(username.length == ""){
             $(".username-error").html("Username is required!");
@@ -246,7 +246,8 @@ $(document).ready(function(){
             password_confirm = "";    
         }
 
-        if(first_name.length != "" && last_name.length != "" && username.length != "" && email.length != "" && password.length != "" && password_confirm != ""){
+        if(username.length != "" && email.length != "" && password.length != "" && password_confirm != ""){
+//      if(first_name.length != "" && last_name.length != "" && username.length != "" && email.length != "" && password.length != "" && password_confirm != ""){
 
         // if(first_name.length !== ""){                                   /*TEST*/
             $.ajax({
@@ -254,8 +255,8 @@ $(document).ready(function(){
                 url: admin_ajax.ajaxurl,
                 data: {
                     'action': 'signup_submit',
-                    'first_name' : first_name,
-                    'last_name' : last_name,
+                    // 'first_name' : first_name,
+                    // 'last_name' : last_name,
                     'username' : username,
                     'email' : email,
                     'password' : password,
@@ -281,6 +282,95 @@ $(document).ready(function(){
         }// end if
 
     })// close submit form
+    
+    
+// === Email Validation For Password Recovery ===    
+
+$("#email_recover_password").on('focusout',function(e){
+        e.preventDefault();
+        
+        var email_recover_pwd = $.trim($("#email_recover_password").val());
+
+        if(email_recover_pwd.length == ""){
+            $(".email-recover-pwd-error").html("Email is required!");
+            $("#email_recover_password").addClass("border-red");
+            $("#email_recover_password").removeClass("border-green");
+            email = "";
+        }
+        
+        if(!email_regExp.test(email_recover_pwd)){
+            $(".email-recover-pwd-error").html("Invalid Email Format!");
+            $("#email_recover_password").addClass("border-red");
+            $("#email_recover_password").removeClass("border-green");
+            email = "";
+            
+        }else{
+            $(".email-recover-pwd-error").html("");
+            $("#email_recover_password").addClass("border-green");
+            $("#email_recover_password").removeClass("border-red"); 
+        }
+
+    }); //close email validation
+    
+    
+    
+// === Submit The Password Recovery Form ===
+    $("#password_recover_submit").click(function(){
+        
+        var email_recover_pwd = $.trim($("#email_recover_password").val());
+        
+        var token = $.trim($("#token").val());
+        
+        if(email_recover_pwd.length == ""){
+            $(".email-recover-pwd-error").html("Email is required!");
+            $("#email_recover_password").addClass("border-red");
+            $("#email_recover_password").removeClass("border-green");
+            email = "";    
+            
+        }else if(email_regExp.test(email_recover_pwd)){
+           
+            $.ajax({
+                type: "POST",
+                url: admin_ajax.ajaxurl,
+                data: {
+                    'action': 'recover_pwd',
+                    'email' : email_recover_pwd,
+                    'token' : token
+                },
+                // beforeSend: function(){
+                //     alert("test");
+                // },
+                success: function(result){
+                    
+                var feedback = JSON.parse(result);
+               
+                    if(feedback['error'] == 'success'){
+                        location = 'https://1touradventure.com/'+ feedback.msg;
+                        
+                    }else if(feedback['error'] == 'fail'){
+                        $("#annoucement").html(`<div class="alert alert-danger alert-dismissible" role="alert">
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        Sorry, this emails does not exist!</div>`);
+                        $("#email_recover_password").addClass("border-red");
+                        $("#email_recover_password").removeClass("border-green");
+                        email = "";
+                        
+                    }// else if
+                    
+                }//success
+            });// ajax
+            
+        }else{
+            $(".email-recover-pwd-error").html("Invalid Email Format!");
+            $("#email_recover_password").addClass("border-red");
+            $("#email_recover_password").removeClass("border-green");
+            email = "";
+            
+        }// end else
+
+    })// close submit form
+    
+    
     
 
 })// close document ready
