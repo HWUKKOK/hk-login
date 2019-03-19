@@ -252,6 +252,19 @@ function logged_in(){
 }// end function
 
 
+// Function have not been used
+function logged_out(){
+
+	session_destroy();
+
+	if(isset($_COOKIE['email'])) {
+
+	unset($_COOKIE['email']);
+
+	}
+
+}// end function
+
 
 /**************** Recover Password function ********************/
 

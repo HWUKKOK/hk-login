@@ -13,6 +13,7 @@
 // include("signup.php");
 include("language.php");
 include("config.php");
+include("deprecated-functions.php");
 
 
 /**************** db functions ********************/
@@ -71,45 +72,46 @@ function fetch_array($result){
 function clean($string) {
 
 	return htmlentities($string);
+	
 }// end function
 
 
 function redirect($location){
 
 	return header("Location: {$location}");
+	
 }// end function
 
 
 function set_message($message) {
 
 	if(!empty($message)){
-
 		$_SESSION['message'] = $message;
 
 	}else {
-
 		$message = "";
-	}
+		
+	}// end else
 }// end function
 
 
 function display_message(){	
 	
 	if(isset($_SESSION['message'])) {
-
 		echo $_SESSION['message'];
 
 		unset($_SESSION['message']);
-	}
+		
+	}// end if
 }// end function
 
 
 // Use for password recovery in recover.php
 function token_generator(){
 
-$token = $_SESSION['token'] =  md5(uniqid(mt_rand(), true));
+    $token = $_SESSION['token'] =  md5(uniqid(mt_rand(), true));
 
-return $token;
+    return $token;
 
 }// end function
 
@@ -132,41 +134,36 @@ return $error_message;
 function email_exist($email){
 
 	$sql = "SELECT id FROM users WHERE email = '$email'";
-
 	$result = query($sql);
 
 	if(row_count($result) == 1 ) {
-
 		return true;
 
 	} else {
-	    
 		return false;
-	}
+		
+	}// end else
 }// end function
 
 
 function username_exist($username) {
 
 	$sql = "SELECT id FROM users WHERE username = '$username'";
-
 	$result = query($sql);
 
 	if(row_count($result) == 1 ) {
-
 		return true;
 
 	} else {
-		
 		return false;
-	}
+		
+	}// end else
 }// end function
 
 
 function send_email($email, $subject, $msg, $headers){
 
-
-return mail($email, $subject, $msg, $headers);
+    return mail($email, $subject, $msg, $headers);
 
 }// end function
 
@@ -230,7 +227,7 @@ function recover_pwd(){
 			} else {
 			    echo json_encode(['error'=> 'fail', 'msg' => '']);
 
-			}    
+			}// end else    
 
     }// end if
    
@@ -239,10 +236,10 @@ function recover_pwd(){
 
 
 
-// === Register check_email into wp_ajax ===
-add_action('wp_ajax_nopriv_check_email', 'check_email');
+// === Register check_email function into wp_ajax ===
+add_action('wp_ajax_nopriv_check_email_availability', 'check_email_availability');
 
-function check_email(){
+function check_email_availability(){
     
     /******** TEST *******/
     // echo "Check Email Now!";                                     /*TEST*/
@@ -250,18 +247,21 @@ function check_email(){
     // echo json_encode(array('error' => 'email_fail'));            /*TEST*/
     // echo $_POST['check_email'];                                  /*TEST*/
     
-    global $db_login_dbname, $db_login_user, $db_login_pwd;
+    global $db_login_dbname, $db_user, $db_pwd;
     
-    $db = new PDO($db_login_dbname, $db_login_user, $db_login_pwd);
+    $db = new PDO($db_login_dbname, $db_user, $db_pwd);
 
-    if(isset($_POST['check_email'])){
-        $email = $_POST['check_email'];
+    if(isset($_POST['temp_email'])){
+        $email = $_POST['temp_email'];
         $query = $db->prepare('SELECT email FROM users WHERE email = ?');
         $query->execute(array($email));
+        
         if($query->rowCount() == 0){
             echo json_encode(array('error' => 'email_success'));
+            
         }else{
             echo json_encode(array('error' => 'email_fail', 'message' => 'Sorry this email is already exist'));
+        
         }// end else
     }// end if
    
@@ -269,14 +269,14 @@ function check_email(){
 }// end function
 
 
-// === Register signup_submit into wp_ajax ===
+// === Register signup_submit function into wp_ajax ===
 add_action('wp_ajax_nopriv_signup_submit', 'signup_submit');
 
 function signup_submit(){
     
     /******** TEST *******/
-    // echo "check signup form";
-    // echo $_POST['first_name'];
+    // echo "check signup form";                                    /*TEST*/
+    // echo $_POST['first_name'];                                   /*TEST*/
     
     if(isset($_GET['signup']) && $_GET['signup'] == 'true'){ 
     // if($_GET['signup'] == 'true'){                               /*TEST*/
@@ -292,25 +292,27 @@ function signup_submit(){
     
     
         /******** Create new user for users db *******/
-        global $db_login_dbname, $db_login_user, $db_login_pwd;
-        $db_users = new PDO($db_login_dbname, $db_login_user, $db_login_pwd);
-    
-        // $query = $db_users->prepare("INSERT INTO users (username, first_name, last_name, email, password) VALUES (?,?,?,?,?)");
-        // $query->execute([$username, $first_name, $last_name, $email, $password]);
+        global $db_login_dbname, $db_user, $db_pwd;
+        $db_users = new PDO($db_login_dbname, $db_user, $db_pwd);
         
         $query = $db_users->prepare("INSERT INTO users (username, email, password) VALUES (?,?,?)");
         $query->execute([$username, $email, $password]);
         
+        // --- Query with full guest details --- 
+        // $query = $db_users->prepare("INSERT INTO users (username, first_name, last_name, email, password) VALUES (?,?,?,?,?)");
+        // $query->execute([$username, $first_name, $last_name, $email, $password]);
+        
         
         /******** Create new guest for guest_profile db *******/
-        global $db_guest_details_dbname, $db_guest_details_user, $db_guest_details_pwd;
-        $db_guest_details = new PDO($db_guest_details_dbname, $db_guest_details_user, $db_guest_details_pwd);
-        
-        // $query_guest_details = $db_guest_details->prepare("INSERT INTO guest_profile (username, first_name, last_name, email) VALUES (?,?,?,?)");
-        // $query_guest_details->execute([$username, $first_name, $last_name, $email]);
+        global $db_guest_details_dbname, $db_user, $db_pwd;
+        $db_guest_details = new PDO($db_guest_details_dbname, $db_user, $db_pwd);
         
         $query_guest_details = $db_guest_details->prepare("INSERT INTO guest_profile (username, email) VALUES (?,?)");
         $query_guest_details->execute([$username, $email]);
+        
+        // --- Query with full guest details ---
+        // $query_guest_details = $db_guest_details->prepare("INSERT INTO guest_profile (username, first_name, last_name, email) VALUES (?,?,?,?)");
+        // $query_guest_details->execute([$username, $first_name, $last_name, $email]);
         
         if($query && $query_guest_details){
     //         $_SESSION['guest_username'] = $username;
@@ -334,241 +336,58 @@ function signup_submit(){
 }// end function
 
 
-/**************** Validation functions ********************/
+// === Register guest_login function into wp_ajax ===
+add_action('wp_ajax_nopriv_guest_login', 'guest_login');
 
-// Use in old version register.php
-function validate_user_registration(){
+function guest_login(){
+    
+    /******** TEST *******/
+    // echo $_POST['email'];                                       /*TEST*/
+    // echo $_POST['password'];                                    /*TEST*/
 
-	$errors = [];
-	$min = 3;
-	$max = 20;
+    $email      = clean($_POST['email']);
+    $password   = clean($_POST['password']);
+     
+        $sql = "SELECT password, id, username FROM users WHERE email = '".escape($email)."' ";
+		$result = query($sql);
 
-	if($_SERVER['REQUEST_METHOD'] == "POST") {
+        // check email exist
+		if(row_count($result) == 1) {
 
-		$first_name 		= clean($_POST['first_name']);
-		$last_name 		    = clean($_POST['last_name']);
-		$username 		    = clean($_POST['username']);
-		$email 			    = clean($_POST['email']);
-		$password		    = clean($_POST['password']);
-		$confirm_password	= clean($_POST['confirm_password']);	
+			$row = fetch_array($result);
 
-		if(strlen($first_name) < $min) {
-			$errors[] = "Your first name cannot be less than {$min} characters";
-		}
+			$db_password    = $row['password'];    
+			$guest_username = $row['username'];
 
-		if(strlen($first_name) > $max) {
-			$errors[] = "Your first name cannot be more than {$max} characters";
-		}
+            // check password valid
+            if(password_verify($password, $db_password)) {
+			
+			// success login and set SESSION for guest's email and username
+			$_SESSION['email'] = $email;
+			$_SESSION['guest_username'] = $guest_username;
+			
+	        echo json_encode(['error'=> 'success', 'msg' => 'guest-profile']);
+	        
+            } else {
+                $_SESSION['annoucement'] = '<div class="alert alert-danger alert-dismissible" role="alert">
+                                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span></button>Sorry, your password is incorrect!</div>';
+                            
+    	        echo json_encode(['error'=> 'fail', 'msg' => 'login']);
+    	        
+            }// end else
 
-		if(strlen($last_name) < $min) {
-			$errors[] = "Your Last name cannot be less than {$min} characters";
-		}
+	    } else {
+    	    $_SESSION['annoucement'] = '<div class="alert alert-danger alert-dismissible" role="alert">
+                                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span></button>Sorry, your email is incorrect!</div>';
+                            
+    	    echo json_encode(['error'=> 'fail', 'msg' => 'login']);
 
-		if(strlen($last_name) > $max) {
-			$errors[] = "Your Last name cannot be more than {$max} characters";
-		}
-
-		if(strlen($username) < $min) {
-			$errors[] = "Your Username cannot be less than {$min} characters";
-		}
-
-		if(strlen($username) > $max) {
-			$errors[] = "Your Username cannot be more than {$max} characters";
-		}
-	
-		if(username_exist($username)){
-			$errors[] = "Sorry that username is already is taken";
-		}
-
-		if(email_exist($email)){
-			$errors[] = "Sorry that email already is registered";
-		}
-
-		if(strlen($email) < $min) {
-			$errors[] = "Your email cannot be more than {$max} characters";
-		}
-
-		if($password !== $confirm_password) {
-			$errors[] = "Your password fields do not match";
-		}
-
-		if(!empty($errors)) {
-		    
-			foreach ($errors as $error) {
-			    echo validation_errors($error);			
-			}
-
-		} else {
-
-			if(register_user($first_name, $last_name, $username, $email, $password)) {
-				set_message("<hr><p class='bg-success text-center'>Please check your email or spam folder for activation link</p>");
-				//redirect("index.php");
-
-			} else {
-				set_message("<p class='bg-danger text-center'>Sorry we could not register the user</p>");
-				redirect("index.php");
-			}
-		}
-
-	}// post request 
-	
-}// end function 
-
-
-
-/**************** Register user functions ********************/
-
-// deprecated function
-function register_user($first_name, $last_name, $username, $email, $password) {
-
-	$first_name = escape($first_name);
-	$last_name  = escape($last_name);
-	$username   = escape($username);
-	$email      = escape($email);
-	$password   = escape($password);
-
-	if(email_exist($email)) {
-
-		return false;
-
-	} else if (username_exist($username)) {
-
-		return false;
-
-	} else {
-
-		$password   = md5($password);
-
-		$validation_code = md5($username . microtime());
-        
-        // register new user in users db
-		$sql_users = "INSERT INTO users(first_name, last_name, username, email, password, validation_code, active)";
-		$sql_users.= " VALUES('$first_name','$last_name','$username','$email','$password','$validation_code', 0)";
-		$result_users = query($sql_users);
-		confirm($result_users);
-		
-		// create new guest profile in guest details
-		$sql_guest_profile = "INSERT INTO guest_profile(first_name, last_name, username, email)";
-		$sql_guest_profile.= " VALUES('$first_name','$last_name','$username','$email')";
-		$result_guest_profile = query_guest_details($sql_guest_profile);
-		confirm_guest_details($result_guest_profile);
-
-		$subject = "Activate Account";
-		$msg = " Please click the link below to activate your Account
-		https://1touradventure.com/activate/?email=$email&code=$validation_code";
-
-		$headers = "From: noreply@1touradventure.com";
-
-		send_email($email, $subject, $msg, $headers);
-
-		return true;
-
-	}
-
+	}// end else    
+   
+    wp_die();
 }// end function
-
-
-
-
-/**************** Activate user functions ********************/
-
-// Use in old version activate.php
-function activate_user() {
-
-	if($_SERVER['REQUEST_METHOD'] == "GET") {
-
-		if(isset($_GET['email'])) {
-
-			$email = clean($_GET['email']);
-			$validation_code = clean($_GET['code']);
-
-			$sql = "SELECT id FROM users WHERE email = '".escape($_GET['email'])."' AND validation_code = '".escape($_GET['code'])."' ";
-			$result = query($sql);
-			confirm($result);
-
-			if(row_count($result) == 1) {
-
-			$sql2 = "UPDATE users SET active = 1, validation_code = 0 WHERE email = '".escape($email)."' AND validation_code = '".escape($validation_code)."' ";	
-			$result2 = query($sql2);
-			confirm($result2);
-
-			set_message("<p class='bg-success'>Your account has been activated please login</p>");
-
-			redirect("https://1touradventure.com/login/");
-
-		} else {
-
-			set_message("<p class='bg-danger'>Sorry Your account could not be activated </p>");
-
-			redirect("https://1touradventure.com/login/");
-
-			}
-		} 
-	}
-}// end function 
- 
-
-
-/**************** Validate user login functions ********************/
-
-// Use in old version login.php
-function validate_user_login(){
-
-	$errors = [];
-	$min = 3;
-	$max = 20;
-
-	if($_SERVER['REQUEST_METHOD'] == "POST") {
-
-		$email 		    = clean($_POST['email']);
-		$password	    = clean($_POST['password']);
-		$remember   	= isset($_POST['remember']);
-
-		if(empty($email)) {
-
-			$errors[] = "Email field cannot be empty";
-
-		}
-		
-		if(empty($password)) {
-
-			$errors[] = "Password field cannot be empty";
-
-		}
-
-		if(!empty($errors)) {
-
-				foreach ($errors as $error) {
-
-				echo validation_errors($error);
-				
-				}
-
-			} else {
-
-				if(login_user($email, $password, $remember)) {
-					
-					if(isset($_SESSION['buy'])){
-						unset($_SESSION['buy']);
-						redirect("https://1touradventure.com/checkout/");
-						//redirect("https://1touradventure.com/dummy-checkout/");
-						//redirect("https://1touradventure.com/dev-confirm-order/");
-
-					} else {
-
-						//redirect("https://1touradventure.com/guest-dashboard/");
-						redirect("https://1touradventure.com/guest-profile/");
-					}
-							
-				} else {
-
-				echo validation_errors("Your credentials are not correct");		
-
-				}
-			}
-	}
-
-}// end function 
 
 
 // Use in new version login.php
@@ -579,45 +398,38 @@ function new_validate_user_login(){
 	$max = 20;
 
 	if($_SERVER['REQUEST_METHOD'] == "POST") {
-
 		$email 		    = clean($_POST['email']);
 		$password	    = clean($_POST['password']);
 		$remember   	= isset($_POST['remember']);
 
 		if(empty($email)) {
-
 			$errors[] = "Email field cannot be empty";
 
-		}
+		}// end if
 		
 		if(empty($password)) {
-
 			$errors[] = "Password field cannot be empty";
 
-		}
+		}// end if
 
 		if(!empty($errors)) {
-
-				foreach ($errors as $error) {
-
-				echo validation_errors($error);
+			foreach ($errors as $error) {
+			echo validation_errors($error);
 				
-				}
+			    }// end foreach
 
+		} else {
+
+			if(login_user($email, $password, $remember)) {
+					//redirect("https://1touradventure.com/guest-dashboard/");
+					redirect("https://1touradventure.com/guest-profile/");
+						
 			} else {
+			echo validation_errors("Your credentials are not correct");		
 
-				if(login_user($email, $password, $remember)) {
-					
-						//redirect("https://1touradventure.com/guest-dashboard/");
-						redirect("https://1touradventure.com/guest-profile/");
-							
-				} else {
-
-				echo validation_errors("Your credentials are not correct");		
-
-				}
-			}
-	}
+			}// end else
+		}// end else
+	}// end if
 
 }// end function
 
@@ -654,99 +466,23 @@ function login_user($email, $password, $remember) {
 				// } 
 
 				$_SESSION['email'] = $email;
-				
 				$_SESSION['guest_username'] = $guest_username;
 
 				return true;
 
 			} else {
 				return false;
-			}
-
+			
+			}// password_verify fail
 			return true;
 
 		} else {
 			return false;
-		}
+			
+		}// row_count fail
 
 	}// end function
 	
-	
-/**************** Logged In function use in all guest account page ********************/
-
-// Function have not been used
-function logged_in(){
-
-	if(isset($_SESSION['email']) || isset($_COOKIE['email'])){
-		
-		return true;
-
-	} else {
-
-		return false;
-	}
-
-}// end function
-
-
-
-
-/**************** Recover Password function ********************/
-
-// old version used in recover.php
-function recover_password() {
-
-	if($_SERVER['REQUEST_METHOD'] == "POST") {
-
-        // check token
-		if(isset($_SESSION['token']) && $_POST['token'] === $_SESSION['token']) {
-
-			$email = clean($_POST['email']);
-
-            // check email existance
-			if(email_exist($email)) {
-
-            // create validation code
-			$validation_code = md5($email . microtime());
-
-            // set validation cookies
-			setcookie('temp_access_code', $validation_code, time() + 900, '/');
-
-            // update users db validation code
-			$sql = "UPDATE users SET validation_code = '".escape($validation_code)."' WHERE email = '".escape($email)."'";
-			$result = query($sql);
-
-            // prepare validation code and email to user
-			$subject = "Please reset your password";
-			$message =  "Here is your password reset code = {$validation_code}, \nClick here to reset your password https://1touradventure.com/code/?email=$email&code=$validation_code";
-			$headers = "From: noreply@1touradventure.com";
-
-			send_email($email, $subject, $message, $headers);
-
-			set_message("<p class='bg-success text-center'>Please check your email or spam folder for a password reset code</p>");
-
-			} else {
-			
-				echo validation_errors("This emails does not exist");
-			}
-
-		} else {
-
-			redirect("index.php");
-
-		}// token checks
- 
-		if(isset($_POST['cancel_submit'])) {
-
-			redirect("https://1touradventure.com/login/");
-
-		}
-
-	} // post request
-
-}// end function
-
-
 
 
 /**************** Code  Validation ********************/
@@ -769,7 +505,6 @@ function validate_code () {
 			} else {
 
 				if(isset($_POST['code'])) {
-
 					$email = clean($_GET['email']);
 
 					$validation_code = clean($_POST['code']);
@@ -778,24 +513,23 @@ function validate_code () {
 					$result = query($sql);
 
 					if(row_count($result) == 1) {
-
 						setcookie('temp_access_code', $validation_code, time() + 900, '/');
 
 						redirect("https://1touradventure.com/reset/?email=$email&code=$validation_code");
 
 					} else {
-
 						echo validation_errors("Sorry wrong validation code");
-					}		
-				}
-			}
+						
+					}// end else		
+				}// end else
+			}// end else
 
 			} else {
-
-		set_message("<p class='bg-danger text-center'>Sorry your validation cookie was expired</p>");
-
-		redirect("https://1touradventure.com/recover/");
-	}		
+        		set_message("<p class='bg-danger text-center'>Sorry your validation cookie was expired</p>");
+        
+        		redirect("https://1touradventure.com/recover/");
+		
+	}// end else		
 }// end function
 
 
@@ -805,24 +539,30 @@ function validate_code () {
 // Used in reset.php
 function password_reset() {
 
+    // check temp_access_code cookie
 	if(isset($_COOKIE['temp_access_code'])) {
 
+        // check email & code 
 		if(isset($_GET['email']) && isset($_GET['code'])) {
 			
+			// check temp_access_code cookie
 			if(isset($_COOKIE['temp_access_code'])) {
 
+            // check SESSION and POST token are set
 			if(isset($_SESSION['token']) && isset($_POST['token'])) {
 
+                // check POST & SESSION token to be the same
 				if($_POST['token'] === $_SESSION['token']) {
 
+                // check password with confirm password
 				if($_POST['password'] === $_POST['confirm_password'])  { 
 
-				// 	$updated_password = md5($_POST['password']);
+                //--- deprecated ---
+				// $updated_password = md5($_POST['password']);
 				
+				    // Update password into db
 				    $updated_password = password_hash($_POST['password'], PASSWORD_DEFAULT);
-
 					$sql = "UPDATE users SET password = '".escape($updated_password)."', validation_code = 0 WHERE email = '".escape($_GET['email'])."'";
-					
 					query($sql);
 
 					set_message("<p class='bg-success text-center'>Your passwords has been updated, you may login now!</p>");
@@ -830,25 +570,24 @@ function password_reset() {
 					redirect("https://1touradventure.com/login/");
 						
 					} else {
+					    echo validation_errors("Sorry, the Password fields do not match");
 
-					echo validation_errors("Sorry, the Password fields do not match");
-
-						}
-				  }	
-			} 
+						}// end else
+				  }// end else	
+			}// end else 
 
 			}else {
 		          set_message("<p class='bg-danger text-center'>Sorry your time has expired</p>");
 
-		    }
-		} 
+		    }// end else
+		}// end if  
 
 	}else {
 		set_message("<p class='bg-danger text-center'>Sorry your time has expired</p>");
 
 		redirect("https://1touradventure.com/recover/");
 
-		}
+		}// end else
 		
 }// end function
 
@@ -860,33 +599,19 @@ function password_reset() {
 function logged_inn(){
 
 	if(isset($_SESSION['email']) || isset($_COOKIE['email'])){
-		
 		return true;
 
 	} else {
-
 		return false;
-	}
-
-}// end function
-
-
-// Function have not been used
-function logged_out(){
-
-	session_destroy();
-
-	if(isset($_COOKIE['email'])) {
-
-	unset($_COOKIE['email']);
-
-	}
+		
+	}// end else
 
 }// end function
 
 
 /**************** Guest Account Log In & Log Out Menu ********************/
 
+// === Add filter into wp_nav_menu_loginout_items ===
 add_filter('wp_nav_menu_loginout_items', 'add_login_logout_link', 10, 2);
 
 function add_login_logout_link($items, $args) { 
@@ -895,26 +620,28 @@ function add_login_logout_link($items, $args) {
 
 	//	$loginoutlink .= '<a href="https://1touradventure.com/logout/">Log out</a>';
 		
-		 $loginoutlink =   $_SESSION['guest_username'];
+		$loginoutlink =   $_SESSION['guest_username'];
 		
 	//	$items .= '<li>'. $loginoutlink .'</li>'; 
 		
-		$items .= '<li class="dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">'. $loginoutlink .' <span class="caret"></span></a>
+		$items .= '<li class="dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown" 
+		            role="button" aria-haspopup="true" aria-expanded="false">'. $loginoutlink .' <span class="caret"></span></a>
 		
-		<ul class="dropdown-menu">
-            <li><a href="https://1touradventure.com/guest-profile/">My Profile</a></li>
-            <li><a href="https://1touradventure.com/guest-my-booking/">My Booking</a></li>
-            <li><a href="https://1touradventure.com/guest-wish-list/">Wish List</a></li>
-            <li><a href="https://1touradventure.com/guest-booking-history/">Booking History</a></li>
-            <li role="separator" class="divider"></li>
-            <li><a href="https://1touradventure.com/logout/">Log Out</a></li>
-          </ul> </li>';
-		
+            		  <ul class="dropdown-menu">
+                        <li><a href="https://1touradventure.com/guest-profile/">My Profile</a></li>
+                        <li><a href="https://1touradventure.com/guest-my-booking/">My Booking</a></li>
+                        <li><a href="https://1touradventure.com/guest-wish-list/">Wish List</a></li>
+                        <li><a href="https://1touradventure.com/guest-booking-history/">Booking History</a></li>
+                        <li role="separator" class="divider"></li>
+                        <li><a href="https://1touradventure.com/logout/">Log Out</a></li>
+                      </ul> 
+                  
+                  </li>';
     }else{
 	 
 	 if($args->theme_location == 'login'){
 	     
-	 $loginoutlink .= '<a href="https://1touradventure.com/login/">Log in | Sign up</a>';
+	    $loginoutlink .= '<a href="https://1touradventure.com/login/">Log in | Sign up</a>';
 	 
 	// $loginoutlink =   $_SESSION['admin-username'];
 		
@@ -922,8 +649,8 @@ function add_login_logout_link($items, $args) {
 		
 	 //$items .= '<li><a href="https://1touradventure.com/logout/">'. $loginoutlink .'</a></li>'; 
 		
- 	} 
- }	
+ 	}// end if 
+ }// end else	
 		return $items;
 
 }// end function
@@ -933,13 +660,12 @@ function add_login_logout_link($items, $args) {
 function check_logged_inn(){
 
 	if(logged_inn()){
-		
 		return true;
 
 	} else {
-
-		redirect("https://1touradventure.com/login/");	
-	}
+		redirect("https://1touradventure.com/login/");
+		
+	}// end else
 
 }// end function
 
@@ -959,39 +685,33 @@ function validate_admin_user_login(){
 		$password	= clean($_POST['admin-password']);
 
 		if(empty($email)) {
-
 			$errors[] = "Email field cannot be empty";
 
-		}
+		}// end if
 		
 		if(empty($password)) {
-
 			$errors[] = "Password field cannot be empty";
 
-		}
+		}// end if
 
 		if(!empty($errors)) {
 
 				foreach ($errors as $error) {
-
 				echo validation_errors($error);
 				
-				}
+				}// end foreach
 
 			} else {
 
 				if(login_admin_user($email, $password)) {
-					
 					redirect("https://1touradventure.com/admin/");
 							
 				} else {
-
-
 				echo validation_errors("Your credentials are not correct");		
 
-				}
-			}
-	}
+				}// end else
+			}// end else
+	}// end if
 
 }// end function 
 
@@ -999,7 +719,6 @@ function validate_admin_user_login(){
 function login_admin_user($email, $password) {
 
 		$sql = "SELECT password, id, username FROM admin_users WHERE email = '".escape($email)."' ";
-
 		$result = query($sql);
 
 		if(row_count($result) == 1) {
@@ -1007,28 +726,25 @@ function login_admin_user($email, $password) {
 			$row = fetch_array($result);
 
 			$db_password = $row['password'];
-			
 			$db_username = $row['username'];
 
 			if($password === $db_password) {
 
-				$_SESSION['admin-email'] = $email;
-				
+				$_SESSION['admin-email']    = $email;
 				$_SESSION['admin-username'] = $db_username;
 
 				return true;
 
 			} else {
-
 				return false;
-			}
-
-			return true;
+			
+			}// end else
+			    return true;
 
 		} else {
-			
 			return false;
-		}
+			
+		}// end else
 
 	}// end function
 	
@@ -1036,13 +752,12 @@ function login_admin_user($email, $password) {
 function admin_logged_in(){
 
 	if(isset($_SESSION['admin-email']) ){
-		
-		return true;
+        return true;
 
 	} else {
-
 		return false;
-	}
+		
+	}// end else
 
 }// end function
 
@@ -1050,13 +765,12 @@ function admin_logged_in(){
 function check_admin_logged_in(){
 
 	if(admin_logged_in()){
-		
 		return true;
 
 	} else {
-
-		redirect("https://1touradventure.com/admin-login/");	
-	}
+		redirect("https://1touradventure.com/admin-login/");
+		
+	}// end else
 
 }// end functions
 
@@ -1065,7 +779,7 @@ function check_admin_logged_in(){
 
 function process_contact_us(){
 	    
-	if(isset($_POST['submit'])) {
+	if(isset($_POST['submit'])){
        
 		$name 		= clean($_POST['contact-name']);
 		$email 		= clean($_POST['contact-email']);
@@ -1076,7 +790,7 @@ function process_contact_us(){
                 
         set_message("<hr><p class='bg-success text-center'>Message Submitted. We will revert to you as soon as possible!</p>");
 
- 	}
+ 	}// end if
 
 }// end function
 

@@ -108,8 +108,8 @@ $(document).ready(function(){
                 // dataType: 'JSON',
                 url: admin_ajax.ajaxurl,
                 data: {
-                    'action': 'check_email',
-                    'check_email' : temp_email
+                    'action': 'check_email_availability',
+                    'temp_email' : temp_email
                 },// data
                 beforeSend: function(){
                     $(".email-error").html('<i class="fa fa-spinner fa-pulse fa-2x fa-fw"></i>')
@@ -284,21 +284,21 @@ $(document).ready(function(){
     })// close submit form
     
     
-// === Email Validation For Password Recovery ===    
+// === Password Recovery - Email Validation ===    
 
 $("#email_recover_password").on('focusout',function(e){
         e.preventDefault();
         
-        var email_recover_pwd = $.trim($("#email_recover_password").val());
+        var temp_email = $.trim($("#email_recover_password").val());
 
-        if(email_recover_pwd.length == ""){
+        if(temp_email.length == ""){
             $(".email-recover-pwd-error").html("Email is required!");
             $("#email_recover_password").addClass("border-red");
             $("#email_recover_password").removeClass("border-green");
             email = "";
         }
         
-        if(!email_regExp.test(email_recover_pwd)){
+        if(!email_regExp.test(temp_email)){
             $(".email-recover-pwd-error").html("Invalid Email Format!");
             $("#email_recover_password").addClass("border-red");
             $("#email_recover_password").removeClass("border-green");
@@ -314,14 +314,14 @@ $("#email_recover_password").on('focusout',function(e){
     
     
     
-// === Submit The Password Recovery Form ===
+// === Password Recovery Form Submission ===
     $("#password_recover_submit").click(function(){
         
         var email_recover_pwd = $.trim($("#email_recover_password").val());
         
         var token = $.trim($("#token").val());
         
-        if(email_recover_pwd.length == ""){
+        if(email_recover_pwd.length === ""){
             $(".email-recover-pwd-error").html("Email is required!");
             $("#email_recover_password").addClass("border-red");
             $("#email_recover_password").removeClass("border-green");
@@ -348,6 +348,7 @@ $("#email_recover_password").on('focusout',function(e){
                         location = 'https://1touradventure.com/'+ feedback.msg;
                         
                     }else if(feedback['error'] == 'fail'){
+                        
                         $("#annoucement").html(`<div class="alert alert-danger alert-dismissible" role="alert">
                         <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                         Sorry, this emails does not exist!</div>`);
@@ -370,7 +371,99 @@ $("#email_recover_password").on('focusout',function(e){
 
     })// close submit form
     
+
+// === Login Email Validation ===    
+
+$("#login_email").focusout(function(){
     
+        var temp_login_email = $.trim($("#login_email").val());
+        
+        if(temp_login_email.length == ""){
+            $(".login-email-error").html("Email is required!");
+            $("#login_email").addClass("border-red");
+            $("#login_email").removeClass("border-green");
+            email = "";
+            
+        }else if(!email_regExp.test(temp_login_email)){
+            $(".login-email-error").html("Invalid Email Format!");
+            $("#login-email").addClass("border-red");
+            $("#login-email").removeClass("border-green");
+            email = "";
+            
+        }else{
+            $(".login-email-error").html("");
+            $("#login_email").addClass("border-green");
+            $("#login_email").removeClass("border-red");
+            email = temp_login_email;
+        }
+
+    }); //close email validation 
+
+
+// === Login Password Validation ===
+    $("#login-password").focusout(function(){
+        var temp_login_password = $.trim($("#login-password").val());
+
+        if(temp_login_password.length == ""){
+            $(".login-password-error").html("Password is required!");
+            $("#login-password").addClass("border-red");
+            $("#login-password").removeClass("border-green");
+            password = "";
+        }else {
+            $(".login-password-error").html("");
+            $("#login-password").addClass("border-green");
+            $("#login-password").removeClass("border-red");
+            password = temp_login_password;
+        }
+
+    })// close password validation
+    
+    
+    
+// === Login Form Submission ===
+    $("#login-submit").click(function(){
+    
+        if(email.length == ""){
+            $(".email-error").html("Email is required!");
+            $("#register_email").addClass("border-red");
+            $("#register_email").removeClass("border-green");
+            email = "";    
+        }
+
+        if(password.length == ""){
+            $(".password-error").html("Password is required!");
+            $("#password").addClass("border-red");
+            $("#password").removeClass("border-green");
+            password = "";    
+        }
+
+        if(email.length != "" && password.length != ""){
+
+            $.ajax({
+                type: "POST",
+                url: admin_ajax.ajaxurl,
+                data: {
+                    'action': 'guest_login',
+                    'email' : email,
+                    'password' : password
+                },
+                success: function(result){
+                    // console.log(result);
+                    var feedback = JSON.parse(result);
+                    
+                    if(feedback['error'] == 'success'){
+                        location = 'https://1touradventure.com/'+ feedback.msg;
+                        
+                    }else if(feedback['error'] == 'fail'){
+                        
+                        location = 'https://1touradventure.com/'+ feedback.msg;
+                    
+                    }// end else 
+                }// success
+            })// ajax            
+        }// end if    
+        
+    })// close login submit form
     
 
 })// close document ready
