@@ -285,7 +285,6 @@ $(document).ready(function(){
     
     
 // === Password Recovery - Email Validation ===    
-
 $("#email_recover_password").on('focusout',function(e){
         e.preventDefault();
         
@@ -370,6 +369,54 @@ $("#email_recover_password").on('focusout',function(e){
         }// end else
 
     })// close submit form
+    
+
+
+
+
+
+// === Password Change - Guest Profile ===
+function change_password(current_password, confirm_password){
+    var current_password = $.trim(current_password);
+    var confirm_password = $.trim(confirm_password);
+
+    if(current_password.length == ""){
+        $(".current-password-error").html("Required current password!");
+        $("#current_password").css("border-color","red");
+    }else{
+        $(".current-password-error").html();
+        $("#current_password").css("border-color","green");
+    }
+
+    if(confirm_password.length == ""){
+        $(".confirm-error").html("Required new password!");
+        $("#confirm_password").css("border-color","red");
+    }else{
+        $(".confirm-error").html();
+        $("#confirm_password").css("border-color","green");
+    }
+
+    // if(current_password.length != "" && new_password.length != ""){
+    //     $.ajax({
+    //         type: 'POST',
+    //         url: 'parts/ajax.php?password=true',
+    //         data: {'current_password': current_password, 'new_password': new_password},
+    //         dataType: 'JSON',
+    //         success: function(feedback){
+    //             // alert(feedback);
+    //             if(feedback['error'] == 'success'){
+    //                 location = "index.php";
+    //             }else if(feedback['error'] == 'patern'){
+    //                 $('.new-password-error').html(feedback['msg']);
+    //                 $('#new_password').css('border-color', 'red');
+    //             }else if(feedback['error'] == 'current_password_wrong'){
+    //                 $('.current-password-error').html(feedback['msg']);
+    //                 $('#current_password').css('border-color', 'red');
+    //             }
+    //         }//success
+    //     })// ajax
+    // }// end if
+}
     
 
 // === Login Email Validation ===    
