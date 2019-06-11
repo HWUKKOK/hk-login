@@ -14,7 +14,7 @@
 include("language.php");
 include("config.php");
 include("deprecated-functions.php");
-
+include("guest.php");
 
 /**************** db functions ********************/
 
@@ -179,11 +179,28 @@ function form_validation() {
 	wp_enqueue_script( 'form-validation', plugin_dir_url( __FILE__ ) . 'form-validation.js', array(), '123', true );
 	
 	wp_localize_script(
-	    'form-validation',  // ajax script handler
-	    'admin_ajax',       // ajax object
+	    'form-validation',                                          // ajax script handler
+	    'admin_ajax',                                               // ajax object
 	    array('ajaxurl' => admin_url('admin-ajax.php?signup=true')) // ajax url
 	    );
 }// end function
+
+
+
+// === Enqueue modal.js scripts into header ===
+add_action( 'wp_enqueue_scripts', 'modal' );
+
+function modal() {
+
+	wp_enqueue_script( 'modal', plugin_dir_url( __FILE__ ) . 'modal.js', array(), '123', false );
+	
+	wp_localize_script(
+	    'modal',                                                    // ajax script handler
+	    'admin_ajax',                                               // ajax object
+	    array('ajaxurl' => admin_url('admin-ajax.php?signup=true')) // ajax url
+	    );
+}// end function  
+
 
 
 // === Register recover_pwd into wp_ajax ===
@@ -390,6 +407,88 @@ function guest_login(){
 }// end function
 
 
+// === Register check_current_pwd function into wp_ajax ===
+add_action('wp_ajax_nopriv_check_current_pwd', 'check_current_pwd');
+
+function check_current_pwd(){
+    
+    /******** TEST *******/
+    // echo "Test check current Password";                             /*TEST*/
+        $email      = $_SESSION['email'];
+        $password   = clean($_POST['password']);
+     
+        $sql = "SELECT password FROM users WHERE email = '".escape($email)."' ";
+		$result = query($sql);
+
+        // check email exist
+		if(row_count($result) == 1) {
+
+			$row = fetch_array($result);
+
+			$db_password    = $row['password'];    
+
+            // check password valid
+            if(password_verify($password, $db_password)) {
+			
+	           // echo "Password Matched";
+	            echo json_encode(['error'=> 'success']);
+	        
+            } else {
+                
+    	       // echo "Wrong Password";
+    	        echo json_encode(['error'=> 'fail']);
+    	        
+            }// end else
+
+	    } else {
+    	   
+    	    echo "Wrong user email";
+
+	}// end else    
+   
+    wp_die();
+    
+}// end function
+
+
+// === Register submit_change_pwd function into wp_ajax ===
+add_action('wp_ajax_nopriv_submit_change_pwd', 'submit_change_pwd');
+
+function submit_change_pwd(){
+    
+    /******** TEST *******/
+    // echo "Test Modal Change Password";                            
+    
+    $email      = $_SESSION['email'];
+    $password   = clean($_POST['password']);
+    
+    // Update password into db
+    $updated_password = password_hash($password, PASSWORD_DEFAULT);
+    
+    global $db_login_dbname, $db_user, $db_pwd;
+    $db_users = new PDO($db_login_dbname, $db_user, $db_pwd);
+    
+    $query = $db_users->prepare("UPDATE users SET password = '".escape($updated_password)."', validation_code = 0 WHERE email = '". $email ."'");
+    $query->execute();
+    
+    if($query){
+        
+        echo json_encode(['message'=> 'Password Successfully Changed!']);
+        
+    }else{
+        
+        echo json_encode(['message'=> 'Password Change Error!']);
+        
+    }
+    
+   wp_die();// Remark: without ending this will cause extra unwanted '0' character.
+   
+}// end function
+
+
+
+/**************** Validate User Login functions ********************/
+
 // Use in new version login.php
 function new_validate_user_login(){
 
@@ -434,7 +533,7 @@ function new_validate_user_login(){
 }// end function
 
 
-/**************** User login functions ********************/
+/**************** User Login functions ********************/
 
 // Helper function used by validate_user_login function
 function login_user($email, $password, $remember) {
